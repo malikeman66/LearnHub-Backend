@@ -10,7 +10,14 @@ const connectDB =
 dotenv.config();
 
 connectDB();
+app.get("/api/db-test", async (req, res) => {
+  const mongoose = require("mongoose");
 
+  res.json({
+    mongoUriExists: !!process.env.MONGO_URI,
+    readyState: mongoose.connection.readyState
+  });
+});
 
 const app =
   express();
