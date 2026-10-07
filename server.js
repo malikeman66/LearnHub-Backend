@@ -1,60 +1,62 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
-const lessonRoutes = require("./routes/lessonRoutes");
+const mongoose = require("mongoose");
 
-const connectDB =
-  require("./config/db");
-
+const connectDB = require("./config/db");
 
 dotenv.config();
 
-connectDB();
-app.get("/api/db-test", async (req, res) => {
-  const mongoose = require("mongoose");
+const app = express();
 
+/* =========================
+   DATABASE
+========================= */
+connectDB();
+
+/* =========================
+   MIDDLEWARE
+========================= */
+app.use(
+  cors({
+    origin: [
+      "https://learn-hub-frontend-theta.vercel.app",
+      "https://learnhub.bonto.run",
+      "http://localhost:5173"
+    ],
+    credentials: true
+  })
+);
+
+app.use(express.json());
+
+/* =========================
+   TEST ROUTE
+========================= */
+app.get("/", (req, res) => {
   res.json({
-    mongoUriExists: !!process.env.MONGO_URI,
-    readyState: mongoose.connection.readyState
+    message: "LearnHub API is running",
+    version: "1.0.0"
   });
 });
 
-const app =
-  express();
+/* =========================
+   DATABASE TEST
+========================= */
+app.get("/api/db-test", (req, res) => {
+  res.json({
+    mongoUriExists: !!process.env.MONGO_URI,
+    mongoConnectionState: mongoose.connection.readyState,
+    message:
+      mongoose.connection.readyState === 1
+        ? "MongoDB connected"
+        : "MongoDB not connected"
+  });
+});
 
-
-/* Middleware */
-
-app.use(
-  cors()
-);
-
-app.use(
-  express.json()
-);
-
-
-/* Test Route */
-
-app.get(
-  "/",
-  (req, res) => {
-
-    res.json({
-
-      message:
-        "LearnHub API is running",
-
-      version:
-        "1.0.0"
-
-    });
-
-  }
-);
-
-
-/* API Routes */
+/* =========================
+   API ROUTES
+========================= */
 
 app.use(
   "/api/auth",
@@ -66,58 +68,52 @@ app.use(
   require("./routes/publicRoutes")
 );
 
-
 app.use(
   "/api/courses",
   require("./routes/courseRoutes")
 );
-
 
 app.use(
   "/api",
   require("./routes/enrollmentRoutes")
 );
 
-
 app.use(
   "/api/admin",
   require("./routes/adminRoutes")
 );
 
-
 app.use(
   "/api/lessons",
   require("./routes/lessonRoutes")
 );
-/* 404 */
 
-app.use(
-  (req, res) => {
+/* =========================
+   404
+========================= */
+app.use((req, res) => {
+  res.status(404).json({
+    message: "API route not found."
+  });
+});
 
-    res.status(404).json({
+/* =========================
+   ERROR HANDLER
+========================= */
+app.use((err, req, res, next) => {
+  console.error("Server Error:", err);
 
-      message:
-        "API route not found."
+  res.status(500).json({
+    message: "Internal Server Error",
+    error: err.message
+  });
+});
 
-    });
+/* =========================
+   SERVER
+========================= */
+const PORT = process.env.PORT || 5000;
 
-  }
-);
-
-
-/* Server */
-
-const PORT =
-  process.env.PORT || 5000;
-
-
-app.listen(
-  PORT,
-  () => {
-
-    console.log(
-      `LearnHub backend running on port ${PORT}`
-    );
-
-  }
-);
+app.listen(PORT, () => {
+  console.log(`LearnHub backend running on port ${PORT}`);
+});
