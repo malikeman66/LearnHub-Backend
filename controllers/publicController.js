@@ -15,6 +15,7 @@ const getPublicStats = async (req, res) => {
       students
     });
   } catch (error) {
+    console.error("Unable to load public statistics:", error.message);
     res.status(500).json({
       message: "Unable to load public statistics."
     });

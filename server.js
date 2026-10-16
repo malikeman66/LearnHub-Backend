@@ -10,11 +10,6 @@ dotenv.config();
 const app = express();
 
 /* =========================
-   DATABASE
-========================= */
-connectDB();
-
-/* =========================
    MIDDLEWARE
 ========================= */
 app.use(
@@ -43,15 +38,34 @@ app.get("/", (req, res) => {
 /* =========================
    DATABASE TEST
 ========================= */
-app.get("/api/db-test", (req, res) => {
-  res.json({
-    mongoUriExists: !!process.env.MONGO_URI,
-    mongoConnectionState: mongoose.connection.readyState,
-    message:
-      mongoose.connection.readyState === 1
-        ? "MongoDB connected"
-        : "MongoDB not connected"
-  });
+app.get("/api/db-test", async (req, res) => {
+  try {
+    await connectDB();
+    res.json({
+      mongoUriExists: true,
+      mongoConnectionState: mongoose.connection.readyState,
+      message: "MongoDB connected"
+    });
+  } catch (error) {
+    console.error("MongoDB Connection Error:", error.message);
+    res.status(503).json({
+      mongoUriExists: Boolean(process.env.MONGO_URI),
+      mongoConnectionState: mongoose.connection.readyState,
+      message: "MongoDB not connected"
+    });
+  }
+});
+
+app.use("/api", async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    console.error("MongoDB Connection Error:", error.message);
+    res.status(503).json({
+      message: "Database unavailable."
+    });
+  }
 });
 
 /* =========================
